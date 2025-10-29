@@ -1,4 +1,3 @@
-from abc import ABC, abstractclassmethod
 from random import choice, randint
 
 import pygame
@@ -24,11 +23,14 @@ BORDER_COLOR = (93, 216, 228)
 # Цвет яблока
 APPLE_COLOR = (255, 0, 0)
 
+# Цвет лука
+ONION_COLOR = (255, 255, 255)
+
 # Цвет змейки
 SNAKE_COLOR = (0, 255, 0)
 
 # Скорость движения змейки:
-SPEED = 20
+SPEED = 10
 
 # Настройка игрового окна:
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
@@ -41,133 +43,203 @@ clock = pygame.time.Clock()
 
 
 # Тут опишите все классы игры.
-class GameObject(ABC):
-    GRID_HEIGHT: int = GRID_HEIGHT
-    GRID_WIDTH: int = GRID_WIDTH
-    GRID_SIZE: int = GRID_SIZE
-    COLOR: tuple
-    BORDER_COLOR: tuple
-
-    def __init__(
-        self, color: tuple, border_color: tuple, position: list = None
-    ):
-        self.COLOR = color
-        self.BORDER_COLOR = border_color
-        self.position_ = position or [self.generate_random_position()]
+class GameObject():
+    def __init__(self):
+        self.position_ = []
 
     def generate_random_position(self) -> list[int]:
         return [
-            randint(0, self.GRID_WIDTH - 1),
-            randint(0, self.GRID_HEIGHT - 1),
+            randint(0, GRID_WIDTH - 1) * GRID_SIZE,
+            randint(0, GRID_HEIGHT - 1) * GRID_SIZE,
         ]
-
-    @abstractclassmethod
-    def draw(cls):
-        pass
-
-
-class Snake(GameObject):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def move(self):
-        pass
 
     def draw(self):
         pass
 
-    def update_keys(self):
-        pass
 
+class Food(GameObject):
+    IS_EATABLE: bool
+    COLOR: tuple
+    CHANGE_CELLS: int
 
-class Apple(GameObject):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__()
+        self.update_position()
 
     def update_position(self):
         self.position_ = self.generate_random_position()
 
-    @property
-    def position(self):
-        return self.position_[0]
-
-    @position.setter
-    def position(self, value: int):
-        self.position_[0] = value
-
     def draw(self):
         rect = pygame.Rect(
-            self.position, (self.GRID_SIZE, self.GRID_SIZE)
+            self.position_, (GRID_SIZE, GRID_SIZE)
         )
         pygame.draw.rect(screen, self.COLOR, rect)
-        pygame.draw.rect(screen, self.BORDER_COLOR, rect, 1)
+        pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
+
+
+class Apple(Food):
+    IS_EATABLE = True
+    COLOR = APPLE_COLOR
+    CHANGE_CELLS = 2
+
+class Onion(Food):
+    IS_EATABLE = False
+    COLOR = ONION_COLOR
+    CHANGE_CELLS = 1
+
+
+class Snake(GameObject):
+    def __init__(self):
+        super().__init__()
+
+        self.position_.append(self.generate_random_position())
+        self.direction = None
+        self.next_direction = None
+        self.change_tail = 0
+
+    def move(self):
+        handle_keys(self)
+
+        if self.next_direction is None:
+            return
+
+        head_x, head_y = self.position_[0]
+        move_x, move_y = self.next_direction
+
+        head_x += move_x * GRID_SIZE
+        head_y += move_y * GRID_SIZE
+
+        if head_x >= SCREEN_WIDTH or head_x < 0 or head_y < 0 or head_y >= SCREEN_HEIGHT:
+            self.__init__()
+            return
+
+        if self.change_tail > 0:
+            for _ in range(self.change_tail):
+                self.position_.append(self.position_[-1])
+        if self.change_tail < 0:
+            for _ in range(abs(self.change_tail)):
+                self.position_.pop()
+        
+        if len(self.position_) == 0:
+                self.__init__()
+                return
+
+        head = [head_x, head_y]
+        if head in self.position_:
+            self.__init__()
+            return
+        self.position_ = [head] + self.position_
+        self.position_.pop()
+
+        self.direction = self.next_direction
+        self.change_tail = 0
+
+    
+    def try_eat(self, food: Food):
+        if self.position_[0] == food.position_:
+            if food.IS_EATABLE:
+                self.change_tail = food.CHANGE_CELLS
+            else:
+                self.change_tail = -food.CHANGE_CELLS
+
+            return True
+        return False
+
+
+    def draw(self):
+        for position in self.position_:
+            rect = (pygame.Rect(position, (GRID_SIZE, GRID_SIZE)))
+            pygame.draw.rect(screen, SNAKE_COLOR, rect)
+            pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
+
+
+# Обработка кнопок и направление движения
+def handle_keys(game_object: GameObject):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            pygame.quit()
+            raise SystemExit
+
+        elif event.type == pygame.KEYDOWN:
+            KEYS = (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT)
+            key = event.key
+
+            # Отдельная обработка для змейки в 1 клетку
+            # Так как она способна двигаться во всех направлениях.
+            if key in KEYS and len(game_object.position_) == 1:
+                if key == pygame.K_UP:
+                    game_object.next_direction = UP
+                elif key == pygame.K_DOWN:
+                    game_object.next_direction = DOWN
+                elif key == pygame.K_LEFT:
+                    game_object.next_direction = LEFT
+                elif key == pygame.K_RIGHT:
+                    game_object.next_direction = RIGHT
+                return
+            
+            if key == pygame.K_UP and game_object.direction != DOWN:
+                game_object.next_direction = UP
+            elif key == pygame.K_DOWN and game_object.direction != UP:
+                game_object.next_direction = DOWN
+            elif key == pygame.K_LEFT and game_object.direction != RIGHT:
+                game_object.next_direction = LEFT
+            elif key == pygame.K_RIGHT and game_object.direction != LEFT:
+                game_object.next_direction = RIGHT
 
 
 def main():
-    # Инициализация PyGame:
     pygame.init()
-    # Тут нужно создать экземпляры классов.
-    snake = Snake(color=SNAKE_COLOR, border_color=BORDER_COLOR)
-    apple = Apple(color=APPLE_COLOR, border_color=BORDER_COLOR)
+
+    snake = Snake()
+
+    CNT_OF_APPLES = 2
+    CNT_OF_ONIONS = 1
+
+    # Макс. кол-во еды, которую можно скушать,
+    # после происходит перестановка еды на карте.
+    MAX_EATABLE_CNT = None or 3
+
+    current_eatable_cnt = 0
+
+    foods = list()
+
+    for _ in range(CNT_OF_APPLES):
+        foods.append(Apple())
+    
+    for _ in range(CNT_OF_ONIONS):
+        foods.append(Onion())
 
     while True:
-        snake.update_keys()
+        screen.fill(BOARD_BACKGROUND_COLOR)
+
         snake.move()
 
+        for food in foods:
+            if snake.try_eat(food):
+                food.update_position()
+                if MAX_EATABLE_CNT:
+                    current_eatable_cnt += 1 if food.IS_EATABLE else 0
+        
+        if current_eatable_cnt >= MAX_EATABLE_CNT:
+            for food in foods:
+                food.update_position()
+            
+            current_eatable_cnt = 0
+
+
         snake.draw()
-        apple.draw()
+        
+        for food in foods:
+            food.draw()
 
         clock.tick(SPEED)
 
-    # Тут опишите основную логику игры.
-    # ...
+        pygame.display.flip()
 
 
 if __name__ == "__main__":
     main()
-
-
-# Метод draw класса Apple
-# def draw(self):
-#     rect = pygame.Rect(self.position, (GRID_SIZE, GRID_SIZE))
-#     pygame.draw.rect(screen, self.body_color, rect)
-#     pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
-
-# # Метод draw класса Snake
-# def draw(self):
-#     for position in self.positions[:-1]:
-#         rect = (pygame.Rect(position, (GRID_SIZE, GRID_SIZE)))
-#         pygame.draw.rect(screen, self.body_color, rect)
-#         pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
-
-#     # Отрисовка головы змейки
-#     head_rect = pygame.Rect(self.positions[0], (GRID_SIZE, GRID_SIZE))
-#     pygame.draw.rect(screen, self.body_color, head_rect)
-#     pygame.draw.rect(screen, BORDER_COLOR, head_rect, 1)
-
-#     # Затирание последнего сегмента
-#     if self.last:
-#         last_rect = pygame.Rect(self.last, (GRID_SIZE, GRID_SIZE))
-#         pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
-
-# Функция обработки действий пользователя
-# def handle_keys(game_object):
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             pygame.quit()
-#             raise SystemExit
-#         elif event.type == pygame.KEYDOWN:
-#             if event.key == pygame.K_UP and game_object.direction != DOWN:
-#                 game_object.next_direction = UP
-#             elif event.key == pygame.K_DOWN and game_object.direction != UP:
-#                 game_object.next_direction = DOWN
-#             elif event.key == pygame.K_LEFT and game_object.direction != RIGHT:
-#                 game_object.next_direction = LEFT
-#             elif event.key == pygame.K_RIGHT and game_object.direction != LEFT:
-#                 game_object.next_direction = RIGHT
-
-# Метод обновления направления после нажатия на кнопку
-# def update_direction(self):
-#     if self.next_direction:
-#         self.direction = self.next_direction
-#         self.next_direction = None
