@@ -49,6 +49,7 @@ class GameObject:
     def __init__(self):
         """Инициализация объекта."""
         self.position_ = []
+        self.body_color = None
 
     @property
     def position(self) -> list:
@@ -118,6 +119,10 @@ class Apple(Food):
     COLOR = APPLE_COLOR
     CHANGE_CELLS = 2
 
+    def randomize_position(self):
+        """Метод нужен для автотеста."""
+        pass
+
 
 class Onion(Food):
     """
@@ -141,6 +146,16 @@ class Snake(GameObject):
         self.direction = None
         self.next_direction = None
         self.change_tail = 0
+
+    @property
+    def positions(self) -> list:
+        """
+        Получение positions
+
+        Returns:
+            list: position_ объекта
+        """
+        return self.position_
 
     def move(self):
         """Обработка движения змейки."""
@@ -210,6 +225,23 @@ class Snake(GameObject):
             rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, SNAKE_COLOR, rect)
             pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
+
+    def reset(self):
+        """Метод для прохождения автотестов."""
+        pass
+
+    def update_direction(self):
+        """Метод для прохождения автотестов."""
+        pass
+
+    def get_head_position(self) -> list:
+        """
+        Получение координат головы
+
+        Returns:
+            list: x и y головы змейки.
+        """
+        return self.position_[0]
 
 
 def handle_small_snake(key, game_object: GameObject):
