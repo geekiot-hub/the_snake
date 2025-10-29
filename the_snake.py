@@ -202,6 +202,31 @@ class Snake(GameObject):
             pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
 
+def handle_small_snake(key, game_object: GameObject):
+    """Обработка кнопок для маленького объекта.
+
+    Args:
+        key (_type_): кнопка, которая была нажата.
+        game_object (GameObject): объект для обработки.
+    """
+    keys = (
+        pygame.K_UP,
+        pygame.K_DOWN,
+        pygame.K_LEFT,
+        pygame.K_RIGHT,
+    )
+
+    if key in keys and len(game_object.position_) == 1:
+        if key == pygame.K_UP:
+            game_object.next_direction = UP
+        elif key == pygame.K_DOWN:
+            game_object.next_direction = DOWN
+        elif key == pygame.K_LEFT:
+            game_object.next_direction = LEFT
+        elif key == pygame.K_RIGHT:
+            game_object.next_direction = RIGHT
+
+
 def handle_keys(game_object: GameObject):
     """
     Обработка кнопок и направление движения.
@@ -225,25 +250,10 @@ def handle_keys(game_object: GameObject):
             raise SystemExit
 
         elif event.type == pygame.KEYDOWN:
-            keys = (
-                pygame.K_UP,
-                pygame.K_DOWN,
-                pygame.K_LEFT,
-                pygame.K_RIGHT,
-            )
             key = event.key
 
-            # Отдельная обработка для змейки в 1 клетку
-            # Так как она способна двигаться во всех направлениях.
-            if key in keys and len(game_object.position_) == 1:
-                if key == pygame.K_UP:
-                    game_object.next_direction = UP
-                elif key == pygame.K_DOWN:
-                    game_object.next_direction = DOWN
-                elif key == pygame.K_LEFT:
-                    game_object.next_direction = LEFT
-                elif key == pygame.K_RIGHT:
-                    game_object.next_direction = RIGHT
+            if len(game_object.position_) == 1:
+                handle_small_snake(key, game_object)
                 return
 
             if key == pygame.K_UP and game_object.direction != DOWN:
