@@ -44,51 +44,100 @@ clock = pygame.time.Clock()
 
 # Тут опишите все классы игры.
 class GameObject:
+    """
+    Базовый класс для объекта игры.
+    """
     def __init__(self):
+        """
+        Инициализация объекта.
+        """
         self.position_ = []
 
     def generate_random_position(self) -> list[int]:
+        """
+        Генерация случайный позиции для объекта.
+
+        Returns:
+            list[int]: случайные x и y на карте.
+        """
         return [
             randint(0, GRID_WIDTH - 1) * GRID_SIZE,
             randint(0, GRID_HEIGHT - 1) * GRID_SIZE,
         ]
 
     def draw(self):
+        """
+        Рендер объекта при помощи pygame.
+        """
         pass
 
 
 class Food(GameObject):
+    """
+    Базовые класс для еды.
+    """
+    # Съедобность еды,
+    # Влияет на прибавление
+    # или отнимание длины змейки.
     IS_EATABLE: bool
+
+    # Цвет еды.
     COLOR: tuple
+
+    # Сколько клеток изменияется
+    # при съедании.
     CHANGE_CELLS: int
 
     def __init__(self):
+        """
+        Инициализация еды.
+        """
         super().__init__()
         self.update_position()
 
     def update_position(self):
+        """
+        Смена позиции еды.
+        """
         self.position_ = self.generate_random_position()
 
     def draw(self):
+        """
+        Рендер еды при помощи pygame.
+        """
         rect = pygame.Rect(self.position_, (GRID_SIZE, GRID_SIZE))
         pygame.draw.rect(screen, self.COLOR, rect)
         pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
 
 class Apple(Food):
+    """
+    Класс для яблок.
+    Наследован от Food.
+    """
     IS_EATABLE = True
     COLOR = APPLE_COLOR
     CHANGE_CELLS = 2
 
 
 class Onion(Food):
+    """
+    Класс для чесноков.
+    Наследован от Food.
+    """
     IS_EATABLE = False
     COLOR = ONION_COLOR
     CHANGE_CELLS = 1
 
 
 class Snake(GameObject):
+    """
+    Класс для змеек.
+    """
     def __init__(self):
+        """
+        Инициализация змейки.
+        """
         super().__init__()
 
         self.position_.append(self.generate_random_position())
@@ -97,6 +146,9 @@ class Snake(GameObject):
         self.change_tail = 0
 
     def move(self):
+        """
+        Обработка движения змейки.
+        """
         handle_keys(self)
 
         if self.next_direction is None:
@@ -138,7 +190,16 @@ class Snake(GameObject):
         self.direction = self.next_direction
         self.change_tail = 0
 
-    def try_eat(self, food: Food):
+    def try_eat(self, food: Food) -> bool:
+        """
+        Попытка скушать еду змейкой.
+
+        Args:
+            food (Food): любая еда.
+
+        Returns:
+            bool: была ли съедена еда.
+        """
         if self.position_[0] == food.position_:
             if food.IS_EATABLE:
                 self.change_tail = food.CHANGE_CELLS
@@ -149,14 +210,25 @@ class Snake(GameObject):
         return False
 
     def draw(self):
+        """
+        Рендер змейки при помощи pygame.
+        """
         for position in self.position_:
             rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, SNAKE_COLOR, rect)
             pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
 
-# Обработка кнопок и направление движения
 def handle_keys(game_object: GameObject):
+    """
+    Обработка кнопок и направление движения.
+
+    Args:
+        game_object (GameObject): игровой объект.
+
+    Raises:
+        SystemExit: пользователь хочет выйти.
+    """
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -208,6 +280,9 @@ def handle_keys(game_object: GameObject):
 
 
 def main():
+    """
+    Точка входа для программы.
+    """
     pygame.init()
 
     snake = Snake()
