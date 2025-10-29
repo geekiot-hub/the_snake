@@ -49,7 +49,7 @@ class GameObject:
     def __init__(self):
         """Инициализация объекта."""
         self.position_ = []
-    
+
     @property
     def position(self) -> list:
         """
