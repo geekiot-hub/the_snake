@@ -51,7 +51,13 @@ class GameObject:
         self.position_ = []
     
     @property
-    def position(self):
+    def position(self) -> list:
+        """
+        Получение position
+
+        Returns:
+            list: position_ объекта
+        """
         return self.position_
 
     def generate_random_position(self) -> list[int]:
