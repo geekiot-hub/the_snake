@@ -49,6 +49,10 @@ class GameObject:
     def __init__(self):
         """Инициализация объекта."""
         self.position_ = []
+    
+    @property
+    def position(self):
+        return self.position_
 
     def generate_random_position(self) -> list[int]:
         """
